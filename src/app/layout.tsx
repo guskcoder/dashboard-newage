@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard Azcend",
+  title: "Dashboard",
   description: "Dashboard de transações Versell Pay",
 };
 
