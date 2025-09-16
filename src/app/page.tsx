@@ -134,6 +134,66 @@ export default function Dashboard() {
     return new Intl.NumberFormat("pt-BR").format(value);
   };
 
+  const CustomLabel = (props: any) => {
+    const { x, y, value } = props;
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <rect
+          x={-20}
+          y={-16}
+          width={40}
+          height={20}
+          rx={4}
+          ry={4}
+          fill="#3B82F6"
+        />
+        <text
+          x={0}
+          y={-2}
+          fill="white"
+          textAnchor="middle"
+          fontSize={11}
+          fontWeight="bold"
+        >
+          {value}
+        </text>
+      </g>
+    );
+  };
+
+  const CustomLabelCurrency = (props: any) => {
+    const { x, y, value } = props;
+    const formattedValue = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2
+    }).format(value);
+    const width = formattedValue.length * 6 + 10;
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <rect
+          x={-width/2}
+          y={-16}
+          width={width}
+          height={20}
+          rx={4}
+          ry={4}
+          fill="#10B981"
+        />
+        <text
+          x={0}
+          y={-2}
+          fill="white"
+          textAnchor="middle"
+          fontSize={11}
+          fontWeight="bold"
+        >
+          {formattedValue}
+        </text>
+      </g>
+    );
+  };
+
   const chartData = data && data.length > 0 ? data.slice().reverse().map(item => ({
     data: item.data_transacao.substring(0, 5),
     transacoes: parseInt(item.total_transacoes.replace(/\./g, "")),
@@ -264,7 +324,7 @@ export default function Dashboard() {
                   name="Transações"
                   strokeWidth={2}
                   dot={{ fill: '#3B82F6', r: 4 }}
-                  label={{ position: 'top', fill: '#3B82F6', fontSize: 12, fontWeight: 'bold' }}
+                  label={<CustomLabel />}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -298,13 +358,7 @@ export default function Dashboard() {
                   name="Lucro (R$)"
                   strokeWidth={2}
                   dot={{ fill: '#10B981', r: 4 }}
-                  label={{
-                    position: 'top',
-                    fill: '#10B981',
-                    fontSize: 12,
-                    fontWeight: 'bold',
-                    formatter: (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
-                  }}
+                  label={<CustomLabelCurrency />}
                 />
               </AreaChart>
             </ResponsiveContainer>
