@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, Dot } from 'recharts'
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts'
 
 interface DataItem {
   data_transacao: string;
@@ -50,7 +50,7 @@ export default function Dashboard() {
         const result = await response.json();
         setData(result.data);
         setLoading(false);
-      } catch (mockErr) {
+      } catch {
         setError("Erro ao carregar dados");
         setLoading(false);
       }
@@ -80,8 +80,8 @@ export default function Dashboard() {
         const response = await fetch("/api/balance/mock");
         const result = await response.json();
         setBalance(result.query?.currentBalance || "0.00");
-      } catch (mockErr) {
-        console.error("Erro ao carregar saldo mockado:", mockErr);
+      } catch {
+        console.error("Erro ao carregar saldo mockado");
         setBalance("0.00");
       }
     }
@@ -134,8 +134,8 @@ export default function Dashboard() {
     return new Intl.NumberFormat("pt-BR").format(value);
   };
 
-  const CustomLabel = (props: any) => {
-    const { x, y, value } = props;
+  const CustomLabel = (props: { x?: number; y?: number; value?: number; index?: number }) => {
+    const { x = 0, y = 0, value = 0 } = props;
     return (
       <g transform={`translate(${x},${y})`}>
         <rect
@@ -161,8 +161,8 @@ export default function Dashboard() {
     );
   };
 
-  const CustomLabelCurrency = (props: any) => {
-    const { x, y, value } = props;
+  const CustomLabelCurrency = (props: { x?: number; y?: number; value?: number; index?: number }) => {
+    const { x = 0, y = 0, value = 0 } = props;
     const formattedValue = new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
