@@ -13,6 +13,7 @@ interface DataItem {
 
 export default function Dashboard() {
   const [data, setData] = useState<DataItem[]>([]);
+  const [balance, setBalance] = useState<string>("0.00");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -20,6 +21,7 @@ export default function Dashboard() {
   useEffect(() => {
     setMounted(true);
     fetchData();
+    fetchBalance();
   }, []);
 
   const fetchData = async () => {
@@ -50,6 +52,36 @@ export default function Dashboard() {
       } catch (mockErr) {
         setError("Erro ao carregar dados");
         setLoading(false);
+      }
+    }
+  };
+
+  const fetchBalance = async () => {
+    try {
+      // Tenta primeiro a API real
+      let response = await fetch("/api/balance", {
+        cache: 'no-store'
+      });
+      let result = await response.json();
+
+      // Se falhar, usa os dados mockados
+      if (result.error) {
+        console.log("Balance API real falhou, usando dados mockados");
+        response = await fetch("/api/balance/mock");
+        result = await response.json();
+      }
+
+      setBalance(result.query?.currentBalance || "0.00");
+    } catch (err) {
+      console.error("Erro ao carregar saldo:", err);
+      // Tenta carregar dados mockados como fallback
+      try {
+        const response = await fetch("/api/balance/mock");
+        const result = await response.json();
+        setBalance(result.query?.currentBalance || "0.00");
+      } catch (mockErr) {
+        console.error("Erro ao carregar saldo mockado:", mockErr);
+        setBalance("0.00");
       }
     }
   };
@@ -139,7 +171,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
             <p className="text-gray-400 text-sm mb-2">Total de Transações</p>
             <p className="text-3xl font-bold text-white">
@@ -158,6 +190,13 @@ export default function Dashboard() {
             <p className="text-gray-400 text-sm mb-2">Lucro de Hoje</p>
             <p className="text-3xl font-bold text-green-400">
               {formatCurrency(todayProfit)}
+            </p>
+          </div>
+
+          <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
+            <p className="text-gray-400 text-sm mb-2">Saldo Disponível</p>
+            <p className="text-3xl font-bold text-blue-400">
+              {formatCurrency(parseFloat(balance.replace(',', '.')))}
             </p>
           </div>
         </div>
