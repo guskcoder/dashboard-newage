@@ -25,7 +25,9 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       // Tenta primeiro a API real
-      let response = await fetch("/api/dashboard");
+      let response = await fetch("/api/dashboard", {
+        cache: 'no-store'
+      });
       let result = await response.json();
 
       // Se falhar, usa os dados mockados
