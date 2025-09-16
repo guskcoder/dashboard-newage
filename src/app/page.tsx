@@ -1,103 +1,249 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-export default function Home() {
+interface DataItem {
+  data_transacao: string;
+  total_transacoes: string;
+  valor_total: string;
+  lucro_total: string;
+}
+
+export default function Dashboard() {
+  const [data, setData] = useState<DataItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      // Tenta primeiro a API real
+      let response = await fetch("/api/dashboard");
+      let result = await response.json();
+
+      // Se falhar, usa os dados mockados
+      if (result.error) {
+        console.log("API real falhou, usando dados mockados");
+        response = await fetch("/api/dashboard/mock");
+        result = await response.json();
+      }
+
+      setData(result.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+      // Tenta carregar dados mockados como fallback
+      try {
+        const response = await fetch("/api/dashboard/mock");
+        const result = await response.json();
+        setData(result.data);
+        setLoading(false);
+      } catch (mockErr) {
+        setError("Erro ao carregar dados");
+        setLoading(false);
+      }
+    }
+  };
+
+  const calculateTotals = () => {
+    if (!data || !data.length) return { transacoes: 0, valor: 0, lucro: 0 };
+
+    return data.reduce(
+      (acc, item) => {
+        return {
+          transacoes:
+            acc.transacoes + parseInt(item.total_transacoes.replace(/\./g, "")),
+          valor:
+            acc.valor +
+            parseFloat(item.valor_total.replace(/\./g, "").replace(",", ".")),
+          lucro:
+            acc.lucro +
+            parseFloat(item.lucro_total.replace(/\./g, "").replace(",", ".")),
+        };
+      },
+      { transacoes: 0, valor: 0, lucro: 0 }
+    );
+  };
+
+  const totals = calculateTotals();
+
+  const getTodayProfit = () => {
+    if (!data || !data.length) return 0;
+    // Pega o último item (mais recente) da lista
+    const lastItem = data[0];
+    return parseFloat(lastItem.lucro_total.replace(/\./g, "").replace(",", "."));
+  };
+
+  const todayProfit = getTodayProfit();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat("pt-BR").format(value);
+  };
+
+  const chartData = data && data.length > 0 ? data.slice().reverse().map(item => ({
+    data: item.data_transacao.substring(0, 5),
+    transacoes: parseInt(item.total_transacoes.replace(/\./g, "")),
+    valor: parseFloat(item.valor_total.replace(/\./g, "").replace(",", ".")),
+    lucro: parseFloat(item.lucro_total.replace(/\./g, "").replace(",", "."))
+  })) : []
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#101828] flex items-center justify-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#101828] flex items-center justify-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#101828] flex items-center justify-center">
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-[#101828] p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center mb-8">
+          <Image
+            src="https://app.versellbank.com/assets/versell-logo.svg"
+            alt="Versell Logo"
+            width={150}
+            height={40}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
+            <p className="text-gray-400 text-sm mb-2">Total de Transações</p>
+            <p className="text-3xl font-bold text-white">
+              {formatNumber(totals.transacoes)}
+            </p>
+          </div>
+
+          <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
+            <p className="text-gray-400 text-sm mb-2">Valor Total Transacionado</p>
+            <p className="text-3xl font-bold text-white">
+              {formatCurrency(totals.valor)}
+            </p>
+          </div>
+
+          <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
+            <p className="text-gray-400 text-sm mb-2">Lucro de Hoje</p>
+            <p className="text-3xl font-bold text-green-400">
+              {formatCurrency(todayProfit)}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
+            <h2 className="text-xl font-bold text-white mb-4">Evolução das Transações</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#354153" />
+                <XAxis dataKey="data" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1D2A39', border: '1px solid #354153' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="transacoes" stroke="#3B82F6" name="Transações" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
+            <h2 className="text-xl font-bold text-white mb-4">Evolução do Lucro</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#354153" />
+                <XAxis dataKey="data" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1D2A39', border: '1px solid #354153' }}
+                  labelStyle={{ color: '#fff' }}
+                  formatter={(value: number) => formatCurrency(value)}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="lucro" stroke="#10B981" name="Lucro (R$)" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153] overflow-x-auto">
+          <h2 className="text-xl font-bold text-white mb-4">
+            Histórico de Transações
+          </h2>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#354153]">
+                <th className="text-left text-gray-400 py-3 px-4">Data</th>
+                <th className="text-right text-gray-400 py-3 px-4">
+                  Transações
+                </th>
+                <th className="text-right text-gray-400 py-3 px-4">
+                  Valor Total Transacionado
+                </th>
+                <th className="text-right text-gray-400 py-3 px-4">Lucro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data && data.length > 0 ? data.map((item, index) => (
+                <tr
+                  key={index}
+                  className="border-b border-[#354153] hover:bg-[#354153] transition-colors"
+                >
+                  <td className="text-white py-3 px-4">
+                    {item.data_transacao}
+                  </td>
+                  <td className="text-white text-right py-3 px-4">
+                    {item.total_transacoes}
+                  </td>
+                  <td className="text-white text-right py-3 px-4">
+                    {formatCurrency(parseFloat(item.valor_total.replace(/\./g, "").replace(",", ".")))}
+                  </td>
+                  <td className="text-green-400 text-right py-3 px-4">
+                    {formatCurrency(parseFloat(item.lucro_total.replace(/\./g, "").replace(",", ".")))}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={4} className="text-gray-400 text-center py-8">
+                    Nenhum dado disponível
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
