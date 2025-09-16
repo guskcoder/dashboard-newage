@@ -117,6 +117,11 @@ export default function Dashboard() {
 
   const todayProfit = getTodayProfit();
 
+  const getTotalBalance = () => {
+    const currentBalance = parseFloat(balance.replace(',', '.'));
+    return currentBalance + todayProfit;
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -196,7 +201,7 @@ export default function Dashboard() {
           <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
             <p className="text-gray-400 text-sm mb-2">Saldo Disponível</p>
             <p className="text-3xl font-bold text-blue-400">
-              {formatCurrency(parseFloat(balance.replace(',', '.')))}
+              {formatCurrency(getTotalBalance())}
             </p>
           </div>
         </div>
