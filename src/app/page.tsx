@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, Dot } from 'recharts'
 
 interface DataItem {
   data_transacao: string;
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -143,7 +144,14 @@ export default function Dashboard() {
   if (!mounted) {
     return (
       <div className="min-h-screen bg-[#101828] flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="animate-scale-pulse">
+          <Image
+            src="https://dash.versellpay.com/loading.svg"
+            alt="Loading"
+            width={100}
+            height={100}
+          />
+        </div>
       </div>
     );
   }
@@ -151,7 +159,14 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#101828] flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="animate-scale-pulse">
+          <Image
+            src="https://dash.versellpay.com/loading.svg"
+            alt="Loading"
+            width={100}
+            height={100}
+          />
+        </div>
       </div>
     );
   }
@@ -167,13 +182,28 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#101828] p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center mb-8">
+        <div className="flex items-center justify-between mb-8">
           <Image
             src="https://app.versellbank.com/assets/versell-logo.svg"
             alt="Versell Logo"
             width={150}
             height={40}
           />
+          <button
+            onClick={async () => {
+              setIsRefreshing(true);
+              await fetchData();
+              await fetchBalance();
+              setIsRefreshing(false);
+            }}
+            disabled={isRefreshing}
+            className={`bg-[#354153] hover:bg-[#4A5568] text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <svg className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -193,14 +223,14 @@ export default function Dashboard() {
 
           <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
             <p className="text-gray-400 text-sm mb-2">Lucro de Hoje</p>
-            <p className="text-3xl font-bold text-green-400">
+            <p className="text-3xl font-bold text-blue-400">
               {formatCurrency(todayProfit)}
             </p>
           </div>
 
           <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
             <p className="text-gray-400 text-sm mb-2">Saldo Disponível</p>
-            <p className="text-3xl font-bold text-blue-400">
+            <p className="text-3xl font-bold text-green-400">
               {formatCurrency(getTotalBalance())}
             </p>
           </div>
@@ -210,7 +240,13 @@ export default function Dashboard() {
           <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
             <h2 className="text-xl font-bold text-white mb-4">Evolução das Transações</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorTransacoes" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#354153" />
                 <XAxis dataKey="data" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
@@ -219,15 +255,31 @@ export default function Dashboard() {
                   labelStyle={{ color: '#fff' }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="transacoes" stroke="#3B82F6" name="Transações" strokeWidth={2} />
-              </LineChart>
+                <Area
+                  type="monotone"
+                  dataKey="transacoes"
+                  stroke="#3B82F6"
+                  fillOpacity={1}
+                  fill="url(#colorTransacoes)"
+                  name="Transações"
+                  strokeWidth={2}
+                  dot={{ fill: '#3B82F6', r: 4 }}
+                  label={{ position: 'top', fill: '#3B82F6', fontSize: 12, fontWeight: 'bold' }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
 
           <div className="bg-[#1D2A39] rounded-lg p-6 border border-[#354153]">
             <h2 className="text-xl font-bold text-white mb-4">Evolução do Lucro</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#354153" />
                 <XAxis dataKey="data" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
@@ -237,8 +289,24 @@ export default function Dashboard() {
                   formatter={(value: number) => formatCurrency(value)}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="lucro" stroke="#10B981" name="Lucro (R$)" strokeWidth={2} />
-              </LineChart>
+                <Area
+                  type="monotone"
+                  dataKey="lucro"
+                  stroke="#10B981"
+                  fillOpacity={1}
+                  fill="url(#colorLucro)"
+                  name="Lucro (R$)"
+                  strokeWidth={2}
+                  dot={{ fill: '#10B981', r: 4 }}
+                  label={{
+                    position: 'top',
+                    fill: '#10B981',
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    formatter: (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
+                  }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
