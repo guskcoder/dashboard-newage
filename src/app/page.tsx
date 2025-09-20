@@ -13,7 +13,6 @@ interface DataItem {
 
 export default function Dashboard() {
   const [data, setData] = useState<DataItem[]>([]);
-  const [balance, setBalance] = useState<string>("0.00");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -22,7 +21,6 @@ export default function Dashboard() {
   useEffect(() => {
     setMounted(true);
     fetchData();
-    fetchBalance();
   }, []);
 
   const fetchData = async () => {
@@ -57,35 +55,6 @@ export default function Dashboard() {
     }
   };
 
-  const fetchBalance = async () => {
-    try {
-      // Tenta primeiro a API real
-      let response = await fetch("/api/balance", {
-        cache: 'no-store'
-      });
-      let result = await response.json();
-
-      // Se falhar, usa os dados mockados
-      if (result.error) {
-        console.log("Balance API real falhou, usando dados mockados");
-        response = await fetch("/api/balance/mock");
-        result = await response.json();
-      }
-
-      setBalance(result.query?.currentBalance || "0.00");
-    } catch (err) {
-      console.error("Erro ao carregar saldo:", err);
-      // Tenta carregar dados mockados como fallback
-      try {
-        const response = await fetch("/api/balance/mock");
-        const result = await response.json();
-        setBalance(result.query?.currentBalance || "0.00");
-      } catch {
-        console.error("Erro ao carregar saldo mockado");
-        setBalance("0.00");
-      }
-    }
-  };
 
   const calculateTotals = () => {
     if (!data || !data.length) return { transacoes: 0, valor: 0, lucro: 0 };
@@ -119,8 +88,8 @@ export default function Dashboard() {
   const todayProfit = getTodayProfit();
 
   const getTotalBalance = () => {
-    const currentBalance = parseFloat(balance.replace(',', '.'));
-    return currentBalance + todayProfit;
+    // Usa o lucro total calculado do histórico como saldo disponível
+    return totals.lucro;
   };
 
   const formatCurrency = (value: number) => {
@@ -253,7 +222,6 @@ export default function Dashboard() {
             onClick={async () => {
               setIsRefreshing(true);
               await fetchData();
-              await fetchBalance();
               setIsRefreshing(false);
             }}
             disabled={isRefreshing}

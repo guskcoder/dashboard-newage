@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 interface TransactionItem {
-  lucro: string;
+  lucro_total: string;
 }
 
 export const dynamic = "force-dynamic";
@@ -36,7 +36,7 @@ export async function GET() {
     if (result.data && Array.isArray(result.data)) {
       totalBalance = result.data.reduce((acc: number, item: TransactionItem) => {
         // Converte o formato brasileiro (1.234,56) para número
-        const lucro = parseFloat(item.lucro.replace(/\./g, "").replace(",", "."));
+        const lucro = parseFloat(item.lucro_total.replace(/\./g, "").replace(",", "."));
         return acc + lucro;
       }, 0);
     }
