@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+interface DataItem {
+  lucro_total: string;
+}
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -29,7 +33,7 @@ export async function GET() {
     // Sum all lucro_total values from the data array
     let totalBalance = 0;
     if (result.data && Array.isArray(result.data)) {
-      totalBalance = result.data.reduce((acc, item) => {
+      totalBalance = result.data.reduce((acc: number, item: DataItem) => {
         const lucro = parseFloat(item.lucro_total.replace(/\./g, "").replace(",", "."));
         return acc + lucro;
       }, 0);
