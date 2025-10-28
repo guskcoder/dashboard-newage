@@ -6,7 +6,7 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const response = await fetch(
-      "https://api.versellpay.com/api/v1/dashboard/getDataNewAge",
+      "https://webhook.versell.tech/webhook/4701d4bc-a7f6-483d-b2a8-67caeab65a51",
       {
         method: "GET",
         headers: {
@@ -23,10 +23,36 @@ export async function GET() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("Data fetched successfully:", data);
+    const rawData = await response.json();
+    console.log("Data fetched successfully:", rawData);
 
-    return NextResponse.json(data);
+    // Pega a data de hoje
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Filtra apenas datas com dados válidos (count > 0) e a partir de hoje (inclusive datas futuras)
+    const filteredData = rawData
+      .filter((item: { count: number; date: string }) => {
+        const itemDate = new Date(item.date);
+        itemDate.setHours(0, 0, 0, 0);
+        return item.count > 0 && itemDate <= today;
+      })
+      .map((item: { date: string; count: number; amount: number }) => {
+        // Count dividido por 2
+        const transactionCount = item.count / 2;
+        // Aplica a fórmula: (count / 2) * 0.50
+        const calculatedAmount = transactionCount * 0.50;
+
+        return {
+          data_transacao: new Date(item.date).toLocaleDateString('pt-BR'),
+          total_transacoes: transactionCount.toString(),
+          valor_total: item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          lucro_total: calculatedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        };
+      })
+      .reverse(); // Inverte para mostrar do mais recente para o mais antigo
+
+    return NextResponse.json({ data: filteredData });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     return NextResponse.json(
