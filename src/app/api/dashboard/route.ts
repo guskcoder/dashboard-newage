@@ -40,13 +40,15 @@ export async function GET() {
       .map((item: { date: string; count: number; amount: number }) => {
         // Count dividido por 2
         const transactionCount = item.count / 2;
-        // Aplica a fórmula: (count / 2) * 0.50
-        const calculatedAmount = transactionCount * 0.50;
+        // Valor total dividido por 2
+        const totalValue = item.amount / 2;
+        // Aplica a fórmula: (count / 2) * 0.65
+        const calculatedAmount = transactionCount * 0.65;
 
         return {
           data_transacao: new Date(item.date).toLocaleDateString('pt-BR'),
           total_transacoes: transactionCount.toString(),
-          valor_total: item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          valor_total: totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           lucro_total: calculatedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         };
       })
