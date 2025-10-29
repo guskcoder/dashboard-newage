@@ -17,11 +17,24 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deductions, setDeductions] = useState(0);
 
   useEffect(() => {
     setMounted(true);
     fetchData();
+    fetchDeductions();
   }, []);
+
+  const fetchDeductions = async () => {
+    try {
+      const response = await fetch("/api/deductions");
+      const result = await response.json();
+      setDeductions(result.total || 0);
+    } catch (err) {
+      console.error("Erro ao carregar deduções:", err);
+      setDeductions(0);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -88,8 +101,8 @@ export default function Dashboard() {
   const todayProfit = getTodayProfit();
 
   const getTotalBalance = () => {
-    // Usa o lucro total calculado do histórico como saldo disponível
-    return totals.lucro;
+    // Usa o lucro total calculado do histórico como saldo disponível, menos as deduções
+    return totals.lucro - deductions;
   };
 
   const formatCurrency = (value: number) => {
@@ -261,6 +274,11 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-green-400">
               {formatCurrency(getTotalBalance())}
             </p>
+            {deductions > 0 && (
+              <p className="text-xs text-gray-500 mt-2">
+                Deduções aplicadas: {formatCurrency(deductions)}
+              </p>
+            )}
           </div>
         </div>
 
